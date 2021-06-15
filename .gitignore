@@ -1,0 +1,9 @@
+# venv
+venv/
+
+# config
+src/__pycache__/
+.idea/
+
+# weight
+data/weights
