@@ -15,7 +15,7 @@ q_text_contain_similar_path = os.path.join(PREPARE_DATA_PATH, 'new_q_text_contai
 q_real_text_mix_path = os.path.join(PREPARE_DATA_PATH, 'new_q_exactly_more_strict_match')
 
 train_data, train_tables = read_data(
-	os.path.join(TRAIN_DATA_PATH, 'base_train.json'),
+	os.path.join(TRAIN_DATA_PATH, 'train.json'),
 	os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
 )  # 41522  5013
 

@@ -49,7 +49,7 @@ weight_save_path = os.path.join(MODEL_PATH, 'weights/nl2sql_finetune.weights')
 
 # if mode != 'test':
 train_data, train_tables = read_data(
-	os.path.join(TRAIN_DATA_PATH, 'base_train.json'),
+	os.path.join(TRAIN_DATA_PATH, 'train.json'),
 	os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
 )  # 41522  5013
 

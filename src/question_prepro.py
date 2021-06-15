@@ -87,7 +87,7 @@ def get_data_and_table():
 	# )
 
 	train_data, train_tables = read_data(
-		os.path.join(TRAIN_DATA_PATH, 'base_train.json'),
+		os.path.join(TRAIN_DATA_PATH, 'train.json'),
 		os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
 	)  # 41522  5013
 	all_data = []
@@ -310,7 +310,7 @@ def get_all_vals_contains_num():
 	获取包含数字的专有名词,数据探查函数
 	"""
 	train_data, train_tables = read_data(
-		os.path.join(TRAIN_DATA_PATH, 'base_train.json'),
+		os.path.join(TRAIN_DATA_PATH, 'train.json'),
 		os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
 	)  # 41522  5013
 	val_set = set([])
@@ -324,7 +324,8 @@ def get_all_vals_contains_num():
 			if not val.isnumeric() and len(val) <= 10:
 
 				ret_iter = re_rule_upper.finditer(val)
-				if ret_iter is None: continue
+				if ret_iter is None:
+					continue
 				for ret in ret_iter:
 					if ret.group(1) + ret.group(3) not in good_set: continue
 					val_trans = ret.group(1) + ret.group(2) + ret.group(3)
