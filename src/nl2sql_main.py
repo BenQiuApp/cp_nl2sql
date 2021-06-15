@@ -15,7 +15,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import Callback
 from tqdm import tqdm
 
-from config import MODEL_PATH, TRAIN_DATA_PATH, VALID_DATA_PATH, TEST_DATA_PATH, TEST_SUBMIT_PATH, LOG_PATH, PY3, PY2
+from config import MODEL_PATH, TRAIN_JSON_PATH, TRAIN_TABLES_PATH, VALID_JSON_PATH, VALID_TABLES_PATH, TEST_JSON_PATH, TEST_TABLES_PATH, TEST_SUBMIT_PATH, LOG_PATH, PY3, PY2
 from calc_acc import check_part_acc
 from check_input_feature import most_similar_new
 from post_treat import smooth_numeric, get_append_unit, regex_tail, number_trans
@@ -49,23 +49,19 @@ weight_save_path = os.path.join(MODEL_PATH, 'weights/nl2sql_finetune.weights')
 
 # if mode != 'test':
 train_data, train_tables = read_data(
-	os.path.join(TRAIN_DATA_PATH, 'train.json'),
-	os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
+	TRAIN_JSON_PATH,
+	TRAIN_TABLES_PATH
 )  # 41522  5013
 
 valid_data, valid_tables = read_data(
-	os.path.join(VALID_DATA_PATH, 'val.json'),
-	os.path.join(VALID_DATA_PATH, 'val.tables.json')
+	VALID_JSON_PATH,
+	VALID_TABLES_PATH
 )  # 4396 1197
 
 test_data, test_tables = read_data(
-	os.path.join(TEST_DATA_PATH, 'test.json'),
-	os.path.join(TEST_DATA_PATH, 'test.tables.json')
+	TEST_JSON_PATH,
+	TEST_TABLES_PATH
 )
-# test_data, test_tables = read_data(
-# 	os.path.join(TEST_DATA_PATH, 'final_test.json'),
-# 	os.path.join(TEST_DATA_PATH, 'final_test.tables.json')
-# )
 
 token_dict = {}
 with codecs.open(dict_path, 'r', 'utf8') as reader:

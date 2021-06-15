@@ -6,7 +6,8 @@ src/__pycache__/
 .idea/
 
 # weight
-data/weights/nl2sql_finetune.weights
+data/weights/checkpoint
+data/weights/nl2sql_finetune.*
 
 # chinese-bert_chinese_wwm_L-12_H-768_A-12
 data/chinese-bert_chinese_wwm_L-12_H-768_A-12/bert_config.json

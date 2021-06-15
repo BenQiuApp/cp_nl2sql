@@ -2,7 +2,7 @@ import os
 import collections
 import cn2an
 import re
-from config import VALID_DATA_PATH, TEST_DATA_PATH, TRAIN_DATA_PATH, MODEL_PATH
+from config import VALID_JSON_PATH, VALID_TABLES_PATH, TEST_JSON_PATH, TEST_TABLES_PATH, TRAIN_JSON_PATH, TRAIN_TABLES_PATH, MODEL_PATH
 from utils import read_data
 
 # 正则匹配区
@@ -72,23 +72,19 @@ def get_data_and_table():
 	获取所有可用数据和表
 	"""
 	valid_data, valid_tables = read_data(
-		os.path.join(VALID_DATA_PATH, 'val.json'),
-		os.path.join(VALID_DATA_PATH, 'val.tables.json')
+		VALID_JSON_PATH,
+		VALID_TABLES_PATH
 	)  # 4396 1197
 	# headers = valid_tables['xxx']['content'][valid_tables['xxxx']['headers'][0]]
 
 	test_data, test_tables = read_data(
-		os.path.join(TEST_DATA_PATH, 'test.json'),
-		os.path.join(TEST_DATA_PATH, 'test.tables.json')
+		TEST_JSON_PATH,
+		TEST_TABLES_PATH
 	)
-	# test_data, test_tables = read_data(
-	# 	os.path.join(TEST_DATA_PATH, 'final_test.json'),
-	# 	os.path.join(TEST_DATA_PATH, 'final_test.tables.json')
-	# )
 
 	train_data, train_tables = read_data(
-		os.path.join(TRAIN_DATA_PATH, 'train.json'),
-		os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
+		TRAIN_JSON_PATH,
+		TRAIN_TABLES_PATH
 	)  # 41522  5013
 	all_data = []
 	all_data.extend(train_data)
@@ -310,8 +306,8 @@ def get_all_vals_contains_num():
 	获取包含数字的专有名词,数据探查函数
 	"""
 	train_data, train_tables = read_data(
-		os.path.join(TRAIN_DATA_PATH, 'train.json'),
-		os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
+		TRAIN_JSON_PATH,
+		TRAIN_TABLES_PATH
 	)  # 41522  5013
 	val_set = set([])
 	re_rule_upper = re.compile(regex)

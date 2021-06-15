@@ -7,9 +7,21 @@ MODEL_PATH = os.path.join(ROOT_DIR, 'data')
 
 TRAIN_DATA_PATH = os.path.join(MODEL_PATH, 'train')
 
+TRAIN_JSON_PATH = os.path.join(TRAIN_DATA_PATH, 'train.json')
+
+TRAIN_TABLES_PATH = os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
+
 VALID_DATA_PATH = os.path.join(MODEL_PATH, 'val')
 
+VALID_JSON_PATH = os.path.join(VALID_DATA_PATH, 'val.json')
+
+VALID_TABLES_PATH = os.path.join(VALID_DATA_PATH, 'val.tables.json')
+
 TEST_DATA_PATH = os.path.join(MODEL_PATH, 'test')
+
+TEST_JSON_PATH = os.path.join(TEST_DATA_PATH, 'test.json')
+
+TEST_TABLES_PATH = os.path.join(TEST_DATA_PATH, 'test.tables.json')
 
 TEST_SUBMIT_PATH = os.path.join(ROOT_DIR, 'result.json')
 

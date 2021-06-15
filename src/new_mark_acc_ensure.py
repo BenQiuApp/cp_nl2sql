@@ -1,6 +1,6 @@
 import os
 from hand_set import get_val_by_pos_hand_set
-from config import PREPARE_DATA_PATH, TRAIN_DATA_PATH
+from config import PREPARE_DATA_PATH, TRAIN_JSON_PATH, TRAIN_TABLES_PATH
 from check_input_feature import trans_question_acc, most_similar_2, alap_an_cn_mark
 from utils import read_data, check_num_exactly_match, check_num_exactly_match_zero_case
 
@@ -15,8 +15,8 @@ q_text_contain_similar_path = os.path.join(PREPARE_DATA_PATH, 'new_q_text_contai
 q_real_text_mix_path = os.path.join(PREPARE_DATA_PATH, 'new_q_exactly_more_strict_match')
 
 train_data, train_tables = read_data(
-	os.path.join(TRAIN_DATA_PATH, 'train.json'),
-	os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
+	TRAIN_JSON_PATH,
+	TRAIN_TABLES_PATH
 )  # 41522  5013
 
 table_types = {}
