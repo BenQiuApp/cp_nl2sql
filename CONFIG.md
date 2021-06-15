@@ -9,3 +9,7 @@ pip install jieba
 pip install editdistance
 pip install cn2an
 pip install records
+
+
+Download: BERT-wwm, Chinese
+https://github.com/ymcui/Chinese-BERT-wwm
