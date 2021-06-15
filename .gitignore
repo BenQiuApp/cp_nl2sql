@@ -14,3 +14,6 @@ data/chinese-bert_chinese_wwm_L-12_H-768_A-12/bert_model.ckpt.data-00000-of-0000
 data/chinese-bert_chinese_wwm_L-12_H-768_A-12/bert_model.ckpt.index
 data/chinese-bert_chinese_wwm_L-12_H-768_A-12/bert_model.ckpt.meta
 data/chinese-bert_chinese_wwm_L-12_H-768_A-12/vocab.txt
+
+# result
+result.json
