@@ -1,0 +1,24 @@
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": "一线城市商品房销售额累计大于 81428 或者同比增速大于 -4.6的有哪几个", "sql": {"agg": [0], "cond_conn_op": 2, "sel": [3], "conds": [[1, 0, "81428"], [2, 0, "-4.6"]]}}
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": "哪些一线城市的同比增速大于 -4.6或者商品房销售额累计大于 81428的", "sql": {"agg": [0], "cond_conn_op": 2, "sel": [3], "conds": [[1, 0, "81428"], [2, 0, "-4.6"]]}}
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": "满足条件商品房销售额累计大于 81428 或者同比增速大于 -4.6的一线城市有哪些", "sql": {"agg": [0], "cond_conn_op": 2, "sel": [3], "conds": [[1, 0, "81428"], [2, 0, "-4.6"]]}}
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": " 满足同比增速小于 8.7的二线城市有哪些", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [5], "conds": [[4, 1, "8.7"]]}}
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": "二线城市房地产销售金额同比增速小于 8.7的有吗", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [5], "conds": [[4, 1, "8.7"]]}}
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": "那些同比增速小于 8.7的二线城市名称", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [5], "conds": [[4, 1, "8.7"]]}}
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": "你好啊，那个16年和17年商品房销售总额总有多少啊", "sql": {"agg": [5], "cond_conn_op": 2, "sel": [1], "conds": [[0, 2, "2016"], [0, 2, "2017"]]}}
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": "诶，那个16年的商品房销售额和那个17年商品房销售额加到一起的话有多少啊", "sql": {"agg": [5], "cond_conn_op": 2, "sel": [1], "conds": [[0, 2, "2016"], [0, 2, "2017"]]}}
+{"table_id": "43ad7ef81d7111e99933f40f24344a08", "question": "你能就是帮我算算看16年和17年的商品房销售额一共达到了多少来着", "sql": {"agg": [5], "cond_conn_op": 2, "sel": [1], "conds": [[0, 2, "2016"], [0, 2, "2017"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "管理这个岗位对专业，对学历有没有什么要求啊", "sql": {"agg": [0, 0], "cond_conn_op": 0, "sel": [3, 4], "conds": [[0, 2, "管理岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "诶你知道那个管理岗要求什么专业，什么学历的吗", "sql": {"agg": [0, 0], "cond_conn_op": 0, "sel": [3, 4], "conds": [[0, 2, "管理岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "你好，你帮我查一下他们要招怎样学历的，还有哪些专业的管理人员来着", "sql": {"agg": [0, 0], "cond_conn_op": 0, "sel": [3, 4], "conds": [[0, 2, "管理岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "专业技术这个岗位主要是做什么你知道吗", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [1], "conds": [[0, 2, "专业技术岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "你帮我查一下那个专业技术岗的工作内容吧", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [1], "conds": [[0, 2, "专业技术岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "你好，我想知道这个专业技术人员主要是要做啥来着", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [1], "conds": [[0, 2, "专业技术岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "管理这个岗位不是要本科学历及以上的吗，那它还有什么条件不", "sql": {"agg": [0], "cond_conn_op": 1, "sel": [6], "conds": [[0, 2, "管理岗位"], [4, 2, "本科"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "我知道那个管理岗位要至少是本科学历的人，但我想问的是这个岗位还有没有一些其它的要求之类的呀", "sql": {"agg": [0], "cond_conn_op": 1, "sel": [6], "conds": [[0, 2, "管理岗位"], [4, 2, "本科"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "你好，你帮我查一下这个管理人员除了要本科学历及以上之外，还有其它的什么要求不", "sql": {"agg": [0], "cond_conn_op": 1, "sel": [6], "conds": [[0, 2, "管理岗位"], [4, 2, "本科"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "一共要招几位管理人员", "sql": {"agg": [5], "cond_conn_op": 0, "sel": [2], "conds": [[0, 2, "管理岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "你好，你帮我查一下这个管理岗要招的总人数", "sql": {"agg": [5], "cond_conn_op": 0, "sel": [2], "conds": [[0, 2, "管理岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "我想知道管理这个职位要招多少人来着", "sql": {"agg": [5], "cond_conn_op": 0, "sel": [2], "conds": [[0, 2, "管理岗位"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "你知道目前有哪些岗学历要求得是硕士及以上的吗", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [0], "conds": [[4, 2, "硕士"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "你帮我查一下要求学历最低也得是研究生的职位有哪些", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [0], "conds": [[4, 2, "硕士"]]}}
+{"table_id": "f41f8d6e453d11e9baa1f40f24344a08", "question": "你好，我想了解一下什么岗位的学历要求得是硕士或者硕士以上的呀", "sql": {"agg": [0], "cond_conn_op": 0, "sel": [0], "conds": [[4, 2, "硕士"]]}}
