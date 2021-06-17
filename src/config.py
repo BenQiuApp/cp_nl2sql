@@ -5,6 +5,8 @@ ROOT_DIR = os.path.abspath(os.curdir)
 
 MODEL_PATH = os.path.join(ROOT_DIR, 'data')
 
+BERT_PATH = os.path.join(MODEL_PATH, 'chinese-bert_chinese_wwm_L-12_H-768_A-12')
+
 TRAIN_DATA_PATH = os.path.join(MODEL_PATH, 'train')
 
 TRAIN_JSON_PATH = os.path.join(TRAIN_DATA_PATH, 'train.json')
@@ -16,6 +18,8 @@ VALID_DATA_PATH = os.path.join(MODEL_PATH, 'val')
 VALID_JSON_PATH = os.path.join(VALID_DATA_PATH, 'val.json')
 
 VALID_TABLES_PATH = os.path.join(VALID_DATA_PATH, 'val.tables.json')
+
+VALID_DATABASE_PATH = os.path.join(VALID_DATA_PATH, 'val.db')
 
 TEST_DATA_PATH = os.path.join(MODEL_PATH, 'test')
 
@@ -33,7 +37,8 @@ BERT_CONFIG_PATH = os.path.join(MODEL_PATH, 'bert_config.json')
 BERT_CKPT_PATH = os.path.join(MODEL_PATH, 'bert_model.ckpt')
 BERT_VOCAB_PATH = os.path.join(MODEL_PATH, 'vocab.txt')
 
-WEIGHT_SAVE_PATH = os.path.join(MODEL_PATH, 'weights/nl2sql_finetune.weights')
+WEIGHT_PATH = os.path.join(MODEL_PATH, 'weights')
+WEIGHT_SAVE_PATH = os.path.join(WEIGHT_PATH, 'nl2sql_finetune.weights')
 
 # data to sqlite
 AGG_DICT = {0: "", 1: "AVG", 2: "MAX", 3: "MIN", 4: "COUNT", 5: "SUM"}

@@ -15,7 +15,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import Callback
 from tqdm import tqdm
 
-from config import MODEL_PATH, TRAIN_JSON_PATH, TRAIN_TABLES_PATH, VALID_JSON_PATH, VALID_TABLES_PATH, TEST_JSON_PATH, TEST_TABLES_PATH, TEST_SUBMIT_PATH, LOG_PATH, PY3, PY2
+from config import BERT_PATH, TRAIN_JSON_PATH, TRAIN_TABLES_PATH, VALID_JSON_PATH, VALID_TABLES_PATH, TEST_JSON_PATH, TEST_TABLES_PATH, TEST_SUBMIT_PATH, LOG_PATH, WEIGHT_SAVE_PATH, PY3, PY2
 from calc_acc import check_part_acc
 from check_input_feature import most_similar_new
 from post_treat import smooth_numeric, get_append_unit, regex_tail, number_trans
@@ -42,10 +42,9 @@ csel_num = 20  # col cnt 最大为20
 learning_rate = 15e-5  # 8 is Ok and testing 15
 min_learning_rate = 1e-5
 
-config_path = os.path.join(MODEL_PATH, 'chinese-bert_chinese_wwm_L-12_H-768_A-12/bert_config.json')
-checkpoint_path = os.path.join(MODEL_PATH, 'chinese-bert_chinese_wwm_L-12_H-768_A-12/bert_model.ckpt')
-dict_path = os.path.join(MODEL_PATH, 'chinese-bert_chinese_wwm_L-12_H-768_A-12/vocab.txt')
-weight_save_path = os.path.join(MODEL_PATH, 'weights/nl2sql_finetune.weights')
+config_path = os.path.join(BERT_PATH, 'bert_config.json')
+checkpoint_path = os.path.join(BERT_PATH, 'bert_model.ckpt')
+dict_path = os.path.join(BERT_PATH, 'vocab.txt')
 
 # if mode != 'test':
 train_data, train_tables = read_data(
@@ -72,29 +71,41 @@ with codecs.open(dict_path, 'r', 'utf8') as reader:
 
 class OurTokenizer(Tokenizer):
 	def _tokenize(self, text):
-		R = []
+		tokens = []
 		for c in text:
 			if c in self._token_dict:
-				R.append(c)
+				tokens.append(c)
 			elif self._is_space(c):
-				R.append('[unused1]')
+				tokens.append('[unused1]')
 			else:
-				R.append('[UNK]')
-		return R
+				tokens.append('[UNK]')
+		return tokens
 
 
 tokenizer = OurTokenizer(token_dict)
 
 
-def seq_padding(X, padding=0, maxlen=None):
-	if maxlen is None:
+def seq_padding(X, padding=0, max_len=None):
+	if max_len is None:
 		L = [len(x) for x in X]
 		ML = max(L)
 	else:
-		ML = maxlen
+		ML = max_len
 	return np.array([
 		np.concatenate([x[:ML], [padding] * (ML - len(x))]) if len(x[:ML]) < ML else x for x in X
 	])
+
+
+def seq_gather(x):
+	"""
+	seq是[None, seq_len, s_size]的格式，
+	idxs是[None, n]的格式，在seq的第i个序列中选出第idxs[i]个向量，
+	最终输出[None, n, s_size]的向量。
+	seq_gather[x, h]
+	"""
+	seq, idxs = x
+	idxs = K.cast(idxs, 'int32')  # must int 32
+	return tf.gather(seq, idxs, batch_dims=1)
 
 
 class DataGenerator:
@@ -105,13 +116,11 @@ class DataGenerator:
 		self.steps = len(self.data) // self.batch_size
 		if len(self.data) % self.batch_size != 0:
 			self.steps += 1
-		print('DataGenerator __init__')
 
 	def __len__(self):
 		return self.steps
 
 	def __iter__(self):
-		print('DataGenerator __iter__')
 		while True:
 			if PY2:
 				idxs = range(len(self.data))
@@ -260,35 +269,23 @@ class DataGenerator:
 				if len(X1) == self.batch_size:
 					X1 = seq_padding(X1)
 					X2 = seq_padding(X2)
-					XM = seq_padding(XM, maxlen=X1.shape[1])
+					XM = seq_padding(XM, max_len=X1.shape[1])
 					H = seq_padding(H)
 					HM = seq_padding(HM)
 					SEL = seq_padding(SEL)
 					CONN = seq_padding(CONN)
-					CSEL0 = seq_padding(CSEL0, maxlen=X1.shape[1])
-					CSEL1 = seq_padding(CSEL1, maxlen=X1.shape[1])
-					CSEL2 = seq_padding(CSEL2, maxlen=X1.shape[1])
-					CDIV = seq_padding(CDIV, maxlen=X1.shape[1])
+					CSEL0 = seq_padding(CSEL0, max_len=X1.shape[1])
+					CSEL1 = seq_padding(CSEL1, max_len=X1.shape[1])
+					CSEL2 = seq_padding(CSEL2, max_len=X1.shape[1])
+					CDIV = seq_padding(CDIV, max_len=X1.shape[1])
 
-					COP = seq_padding(COP, maxlen=X1.shape[1])
+					COP = seq_padding(COP, max_len=X1.shape[1])
 					yield [X1, X2, XM, H, HM, SEL, CONN, CSEL0, CSEL1, CSEL2, COP, CDIV], None
 					X1, X2, XM, H, HM, SEL, CONN, CSEL0, COP = [], [], [], [], [], [], [], [], []
 					CSEL1, CSEL2 = [], []
 					CDIV = []
 				else:
 					pass
-
-
-def seq_gather(x):
-	"""
-	seq是[None, seq_len, s_size]的格式，
-	idxs是[None, n]的格式，在seq的第i个序列中选出第idxs[i]个向量，
-	最终输出[None, n, s_size]的向量。
-	seq_gather[x, h]
-	"""
-	seq, idxs = x
-	idxs = K.cast(idxs, 'int32')  # must int 32
-	return tf.gather(seq, idxs, batch_dims=1)
 
 
 train_D = DataGenerator(train_data, train_tables)  # get Train data
@@ -727,7 +724,7 @@ if mode == 'evaluate':
 
 def test(data, tables, submit_path):
 	pbar = tqdm()
-	model.load_weights(weight_save_path)  #
+	model.load_weights(WEIGHT_SAVE_PATH)  #
 	F = open(submit_path, 'w')
 	for i, d in enumerate(data):
 		question = d['question']
@@ -753,9 +750,10 @@ if mode == 'test':
 	sys.exit(0)
 
 
-class Evaluate(Callback):
+class MyCallback(Callback):
 	def __init__(self):
-		self.accs = []
+		print('Evaluate - __init__')
+		# self.accs = []
 		self.best = 0
 		self.passed = 0
 		self.stage = 0
@@ -764,6 +762,7 @@ class Evaluate(Callback):
 		"""
 		第一个epoch用来warmup，第二个epoch把学习率降到最低
 		"""
+		print('Evaluate - on_batch_begin')
 		if self.passed < self.params['steps']:
 			lr = (self.passed + 1.) / self.params['steps'] * learning_rate
 			K.set_value(self.model.optimizer.lr, lr)
@@ -775,18 +774,16 @@ class Evaluate(Callback):
 			self.passed += 1
 
 	def on_epoch_end(self, epoch, logs=None):
-		acc = self.evaluate()
-		self.accs.append(acc)
+		print('Evaluate - on_epoch_end')
+		acc = evaluate(valid_data, valid_tables)
+		# self.accs.append(acc)
 		if acc >= self.best:
 			self.best = acc
-			train_model.save_weights(weight_save_path)
+			train_model.save_weights(WEIGHT_SAVE_PATH)
 		print('acc: %.5f, best acc: %.5f\n' % (acc, self.best))
 
-	def evaluate(self):
-		return evaluate(valid_data, valid_tables)
 
-
-evaluator = Evaluate()
+callback = MyCallback()
 
 if __name__ == '__main__':
 	print('train_model.fit_generator')
@@ -794,8 +791,8 @@ if __name__ == '__main__':
 		train_D.__iter__(),
 		steps_per_epoch=len(train_D),
 		epochs=40,
-		callbacks=[evaluator]
+		callbacks=[callback]
 	)
 else:
 	print('train_model.load_weights')
-	train_model.load_weights(weight_save_path)
+	train_model.load_weights(WEIGHT_SAVE_PATH)

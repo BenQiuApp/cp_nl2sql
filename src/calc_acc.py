@@ -2,7 +2,7 @@ import numpy as np
 import os
 import json
 from dbengine import DBEngine
-from config import VALID_DATA_PATH, LOG_PATH, PY3
+from config import VALID_DATABASE_PATH, LOG_PATH, PY3
 
 
 class Sqlite3Oper():
@@ -21,7 +21,7 @@ class Sqlite3Oper():
 		return ret_gt == ret_pred
 
 
-engine = DBEngine(os.path.join(VALID_DATA_PATH, 'val.db'))
+engine = DBEngine(VALID_DATABASE_PATH)
 sqlite_oper = Sqlite3Oper(engine)
 
 
@@ -46,7 +46,7 @@ def check_part_acc(pred_queries, gt_queries, tables_list, valid_data):
 	for pred_qry, gt_qry, table_id, valid_d in zip(pred_queries, gt_queries, tables_list, valid_data):
 		res = sqlite_oper.is_same_execute(table_id, gt_qry, pred_qry)
 		# print(res)
-		if res == True:
+		if res:
 			continue
 		# else:
 		#     print("exe is not good")
@@ -82,7 +82,8 @@ def check_part_acc(pred_queries, gt_queries, tables_list, valid_data):
 		if len(cond_pred) != len(cond_gt):
 			good = False
 			cond_num_err += 1
-			if PY3 and NEED_REWRITE_LOG: fh_where_cnt_err.write(strs_py3)
+			if PY3 and NEED_REWRITE_LOG:
+				fh_where_cnt_err.write(strs_py3)
 
 		else:
 			cond_op_pred, cond_op_gt = {}, {}
@@ -96,14 +97,16 @@ def check_part_acc(pred_queries, gt_queries, tables_list, valid_data):
 			if set(cond_op_pred.keys()) != set(cond_op_gt.keys()):
 				cond_col_err += 1
 				good = False
-				if PY3 and NEED_REWRITE_LOG: fh_where_col_err.write(strs_py3)
+				if PY3 and NEED_REWRITE_LOG:
+					fh_where_col_err.write(strs_py3)
 
 			where_op_pred = [cond_op_pred[x] for x in sorted(cond_op_pred.keys())]
 			where_op_gt = [cond_op_gt[x] for x in sorted(cond_op_gt.keys())]
 			if where_op_pred != where_op_gt:
 				cond_op_err += 1
 				good = False
-				if PY3 and NEED_REWRITE_LOG: fh_where_oper_err.write(strs_py3)
+				if PY3 and NEED_REWRITE_LOG:
+					fh_where_oper_err.write(strs_py3)
 
 			where_val_pred = [cond_val_pred[x] for x in sorted(cond_val_pred.keys())]
 			where_val_gt = [cond_val_gt[x] for x in sorted(cond_val_gt.keys())]
@@ -111,7 +114,8 @@ def check_part_acc(pred_queries, gt_queries, tables_list, valid_data):
 			if where_val_pred != where_val_gt:
 				cond_val_err += 1
 				good = False
-				if PY3 and NEED_REWRITE_LOG: fh_where_val_err.write(strs_py3)
+				if PY3 and NEED_REWRITE_LOG:
+					fh_where_val_err.write(strs_py3)
 
 		if not good:
 			tot_err += 1
