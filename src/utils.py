@@ -1,7 +1,5 @@
-import os
 import json
 import numpy as np
-from config import TRAIN_DATA_PATH
 
 
 def read_data(data_file, table_file):
@@ -26,7 +24,6 @@ def read_data(data_file, table_file):
 				temp['content'][h] = set(rows[:, i])
 				if temp['types'][i] == 'text':
 					temp['keywords'][i] = ''
-					# get_key_words(d['content'][h])
 				else:
 					temp['keywords'][i] = ''
 				temp['all_values'].update(temp['content'][h])
@@ -35,10 +32,34 @@ def read_data(data_file, table_file):
 	return data, tables
 
 
-# train_data, train_tables = read_data(
-# 	os.path.join(TRAIN_DATA_PATH, 'train.json'),
-# 	os.path.join(TRAIN_DATA_PATH, 'train.tables.json')
-# )
+def find_num(val, target, ignore_zero=False):
+	"""
+	数值精确匹配
+	:param val: num value
+	:param target: target string
+	:param ignore_zero: ignore zeros in the ending
+	:return:
+	"""
+	num = str(val)
+	find_start = 0
+	match_count, match_start_idx, match_end_idx = 0, 0, 0
+	while target.find(num, find_start) != -1:
+		find_start = target.index(num, find_start)
+		temp_start_idx = find_start - 1
+		temp_end_idx = find_start + len(num)
+
+		while temp_start_idx >= 0 and target[temp_start_idx].isdigit():
+			temp_start_idx -= 1
+		while temp_end_idx < len(target) and target[temp_end_idx].isdigit():
+			temp_end_idx += 1
+
+		if temp_start_idx >= find_start - 1 and \
+				not (temp_end_idx > find_start + len(num) and (ignore_zero and int(target[find_start + len(num): temp_end_idx]) != 0)):
+			match_count += 1
+			match_start_idx = temp_start_idx + 1
+			match_end_idx = temp_end_idx - 1
+		find_start = temp_end_idx
+	return match_count, match_start_idx, match_end_idx
 
 
 def check_num_exactly_match(num, question):
@@ -83,13 +104,20 @@ def check_num_exactly_match(num, question):
 
 
 def check_num_exactly_match_test():
-	assert check_num_exactly_match(1, '2011年北京排名第1的品牌') == (1, 10, 10)
-	assert check_num_exactly_match(1, '1年北京排名第11的品牌') == (1, 0, 0)
-	assert check_num_exactly_match(1, '11年北京排名第11的品牌')[0] == 0
-	assert check_num_exactly_match(20, '销量大于20吨且盈利大于20万的商品')[0] == 2
-	assert check_num_exactly_match(11, '11年北京排名第11的品牌')[0] == 2
+	# assert check_num_exactly_match(1, '2011年北京排名第1的品牌') == (1, 10, 10)
+	# assert check_num_exactly_match(1, '1年北京排名第11的品牌') == (1, 0, 0)
+	# assert check_num_exactly_match(1, '11年北京排名第11的品牌')[0] == 0
+	# assert check_num_exactly_match(20, '销量大于20吨且盈利大于20万的商品')[0] == 2
+	# assert check_num_exactly_match(11, '11年北京排名第11的品牌')[0] == 2
 	assert check_num_exactly_match(2, '2020年销量大于20且盈利为2的品牌是啥')[0] == 2  ## 这种反例一定要考虑哦
-	assert check_num_exactly_match(20, '2020年销量大于20且盈利为2的品牌是啥') == (1, 9, 10)
+	# assert check_num_exactly_match(20, '2020年销量大于20且盈利为2的品牌是啥') == (1, 9, 10)
+	# assert find_num(1, '2011年北京排名第1的品牌') == (1, 10, 10)
+	# assert find_num(1, '1年北京排名第11的品牌') == (1, 0, 0)
+	# assert find_num(1, '11年北京排名第11的品牌')[0] == 0
+	# assert find_num(20, '销量大于20吨且盈利大于20万的商品')[0] == 2
+	# assert find_num(11, '11年北京排名第11的品牌')[0] == 2
+	assert find_num(2, '2020年销量大于20且盈利为2的品牌是啥', False)[0] == 2  ## 这种反例一定要考虑哦
+	# assert find_num(20, '2020年销量大于20且盈利为2的品牌是啥') == (1, 9, 10)
 
 
 def check_num_exactly_match_zero_case(num, question):
