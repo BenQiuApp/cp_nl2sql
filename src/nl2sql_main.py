@@ -17,13 +17,13 @@ from tqdm import tqdm
 
 from config import BERT_PATH, TRAIN_JSON_PATH, TRAIN_TABLES_PATH, VALID_JSON_PATH, VALID_TABLES_PATH, TEST_JSON_PATH, TEST_TABLES_PATH, TEST_SUBMIT_PATH, LOG_PATH, WEIGHT_SAVE_PATH, PY3, PY2
 from calc_acc import check_part_acc
-from check_input_feature import most_similar_new
+from check_input_feature import find_similar_with_num, find_similar_fragment, find_column_value
 from post_treat import smooth_numeric, get_append_unit, regex_tail, number_trans
-from new_mark_acc_ensure import correct_q_set, check_num_exactly_match, most_similar_2,\
-	no_num_similar_set, q_one_vs_more_col_set, q_need_exactly_match_set, q_need_exactly_match_more_strinct_set,\
-	q_text_contain_similar_set, q_need_col_similar_set, alap_an_cn_mark
-from question_prepro import trans_question_acc, trans_question_short_year
-from utils import read_data, check_num_exactly_match_zero_case
+from new_mark_acc_ensure import correct_q_set, no_num_similar_set,\
+	q_one_vs_more_col_set, q_need_exactly_match_set, q_need_exactly_match_more_strinct_set,\
+	q_text_contain_similar_set, q_need_col_similar_set
+from question_prepro import preprocess_cn_2_an, preprocess_short_year
+from utils import read_data, find_num
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', type=str, default='', help='execute mode, eg: train/test/evaluate')
@@ -132,63 +132,73 @@ class DataGenerator:
 			CDIV = []
 
 			for i in idxs:
-				d = self.data[i]
-				ori_q = d['question']
-				d['question'] = trans_question_acc(d['question'])
-				t = self.tables[d['table_id']]['headers']
-				dtypes = self.tables[d['table_id']]['types']
-				x1, x2 = tokenizer.encode(d['question'])
-				xm = [0] + [1] * len(d['question']) + [0]
+				temp_data = self.data[i]
+				table_id = temp_data['table_id']
+				ori_q = temp_data['question']
+				question = preprocess_cn_2_an(temp_data['question'])
+				# temp_data['question'] = preprocess_cn_2_an(temp_data['question'])
+				t_headers = self.tables[table_id]['headers']
+				t_types = self.tables[table_id]['types']
+				
+				# chinese-bert: vocab.txt
+				# token_ids, segment_ids
+				x1, x2 = tokenizer.encode(question)
+				xm = [0] + [1] * len(question) + [0]
 				h = []
-				for j in t:
+				for j in t_headers:
 					_x1, _x2 = tokenizer.encode(j)
 					h.append(len(x1))
 					x1.extend(_x1)
 					x2.extend(_x2)
+				# x1 --> encode(question).extend([encode(headers)])
+
 				hm = [1] * len(h)
+
 				sel = []
+				# sql.sel --> sql.agg / num_agg.not_select
 				for j in range(len(h)):
-					if j in d['sql']['sel']:
-						j = d['sql']['sel'].index(j)
-						sel.append(d['sql']['agg'][j])
+					if j in temp_data['sql']['sel']:
+						j = temp_data['sql']['sel'].index(j)
+						sel.append(temp_data['sql']['agg'][j])
 					else:
+						# num_agg = 7 agg_sql_dict = {0:"", 1:"AVG", 2:"MAX", 3:"MIN", 4:"COUNT", 5:"SUM", 6:"不被select"}
 						sel.append(num_agg - 1)
-				conn = [d['sql']['cond_conn_op']]
-				csel0 = np.zeros(len(d['question']) + 2, dtype='int32')
-				csel1 = np.zeros(len(d['question']) + 2, dtype='int32')
-				csel2 = np.zeros(len(d['question']) + 2, dtype='int32')
-				cop = np.zeros(len(d['question']) + 2, dtype='int32') + num_op - 1
-				cdiv = np.zeros(len(d['question']) + 2, dtype='int32')
+
+				conn = [temp_data['sql']['cond_conn_op']]
+				csel0 = np.zeros(len(question) + 2, dtype='int32')
+				csel1 = np.zeros(len(question) + 2, dtype='int32')
+				csel2 = np.zeros(len(question) + 2, dtype='int32')
+				cop = np.zeros(len(question) + 2, dtype='int32') + num_op - 1
+				cdiv = np.zeros(len(question) + 2, dtype='int32')
 				is_wrong_q = False
-				for cond in d['sql']['conds']:
-					if d['question'] in correct_q_set:
-						if dtypes[cond[0]] == 'real':
-							_, start_pos, end_pos = check_num_exactly_match(cond[2], d['question'])
+				for cond in temp_data['sql']['conds']:
+					if question in correct_q_set:
+						if t_types[cond[0]] == 'real':
+							_, start_pos, end_pos = find_num(cond[2], question)
 							csel0[start_pos + 1: end_pos + 1 + 1] = cond[0] + 1
 							cop[start_pos + 1: end_pos + 1 + 1] = cond[1]
 						else:
-							start_pos = d['question'].index(cond[2]) if cond[2] in d['question'] else \
-								d['question'].index(most_similar_2(cond[2], d['question']))
+							start_pos = question.index(cond[2]) if cond[2] in question else \
+								question.index(find_similar_fragment(cond[2], question))
 							# print(start_pos, start_pos + len(cond[2]), d['question'][start_pos: start_pos + len(cond[2])])
 							csel0[start_pos + 1: start_pos + 1 + len(cond[2])] = cond[0] + 1
 							cop[start_pos + 1: start_pos + 1 + len(cond[2])] = cond[1]
-
-					elif d['question'] in no_num_similar_set:
+					elif question in no_num_similar_set:
 						# print('cond val is{}'.format(cond[2]))
-						# print('cond val is {}, q is {}  and sim is {}'.format(cond[2],  most_similar_2(cond[2], d['question'])))
+						# print('cond val is {}, q is {}  and sim is {}'.format(cond[2],  find_similar_fragment(cond[2], d['question'])))
 
-						sim = cond[2] if cond[2] in d['question'] else most_similar_2(cond[2], d['question'])
-						start_pos = d['question'].index(sim)
+						sim = cond[2] if cond[2] in temp_data['question'] else find_similar_fragment(cond[2], temp_data['question'])
+						start_pos = temp_data['question'].index(sim)
 						# print(d['question'])
 						# print(start_pos, start_pos + len(sim), d['question'][start_pos: start_pos + len(sim)])
 						csel0[start_pos + 1: start_pos + len(sim) + 1] = cond[0] + 1
 						cop[start_pos + 1: start_pos + len(sim) + 1] = cond[1]
-					elif d['question'] in q_one_vs_more_col_set:
+					elif temp_data['question'] in q_one_vs_more_col_set:
 						# print(d['question'])
-						if check_num_exactly_match(cond[2], d['question'])[0] == 1:
-							_, start_pos, end_pos = check_num_exactly_match(cond[2], d['question'])
-						elif check_num_exactly_match_zero_case(cond[2], d['question'])[0] == 1:
-							_, start_pos, end_pos = check_num_exactly_match_zero_case(cond[2], d['question'])
+						if find_num(cond[2], temp_data['question'])[0] == 1:
+							_, start_pos, end_pos = find_num(cond[2], temp_data['question'])
+						elif find_num(cond[2], temp_data['question'], False)[0] == 1:
+							_, start_pos, end_pos = find_num(cond[2], temp_data['question'], False)
 						else:
 							raise ValueError('value error')
 						if max(csel0[start_pos + 1: end_pos + 1 + 1]) != 0:
@@ -201,45 +211,45 @@ class DataGenerator:
 						cop[start_pos + 1: end_pos + 1 + 1] = cond[1]
 					# print(start_pos, end_pos, d['question'][start_pos: end_pos + 1])
 
-					elif d['question'] in q_need_exactly_match_set:
-						_, start_pos, end_pos = check_num_exactly_match(cond[2], d['question'])
+					elif temp_data['question'] in q_need_exactly_match_set:
+						_, start_pos, end_pos = find_num(cond[2], temp_data['question'])
 						# print(d['question'])
 						# print(start_pos, end_pos, d['question'][start_pos: end_pos + 1])
 						csel0[start_pos + 1: end_pos + 1 + 1] = cond[0] + 1
 						cop[start_pos + 1: end_pos + 1 + 1] = cond[1]
-					elif d['question'] in q_need_exactly_match_more_strinct_set:
-						_, start_pos, end_pos = check_num_exactly_match_zero_case(cond[2], d['question'])
+					elif temp_data['question'] in q_need_exactly_match_more_strinct_set:
+						_, start_pos, end_pos = find_num(cond[2], temp_data['question'], False)
 						# print(d['question'])
 						# print(start_pos, end_pos, d['question'][start_pos: end_pos + 1])
 						csel0[start_pos + 1: end_pos + 1 + 1] = cond[0] + 1
 						cop[start_pos + 1: end_pos + 1 + 1] = cond[1]
 
-					elif d['question'] in q_text_contain_similar_set:
-						if dtypes[cond[0]] == 'real':  # 如果是数字的话，通过另外的方法判断
+					elif temp_data['question'] in q_text_contain_similar_set:
+						if t_types[cond[0]] == 'real':  # 如果是数字的话，通过另外的方法判断
 							# print(d['question'])
-							find_cnt, start_pos, end_pos = check_num_exactly_match_zero_case(cond[2], d['question'])
+							find_cnt, start_pos, end_pos = find_num(cond[2], temp_data['question'], False)
 							if find_cnt == 1:
 
 								# print(start_pos, end_pos, d['question'][start_pos: end_pos + 1])
 								csel0[start_pos + 1: end_pos + 1 + 1] = cond[0] + 1
 								cop[start_pos + 1: end_pos + 1 + 1] = cond[1]
 							elif find_cnt == 0:
-								val = most_similar_2(cond[2], d['question'])
-								start_pos = d['question'].index(val)
+								val = find_similar_fragment(cond[2], temp_data['question'])
+								start_pos = temp_data['question'].index(val)
 								# print(start_pos, start_pos + len(sim), d['question'][start_pos: start_pos + len(sim)])
 								csel0[start_pos + 1: start_pos + len(val) + 1] = cond[0] + 1
 								cop[start_pos + 1: start_pos + len(val) + 1] = cond[1]
 
 						else:  # 文本
-							val = most_similar_2(cond[2], d['question'])
-							start_pos = d['question'].index(val)
+							val = find_similar_fragment(cond[2], temp_data['question'])
+							start_pos = temp_data['question'].index(val)
 							# print(start_pos, start_pos + len(sim), d['question'][start_pos: start_pos + len(sim)])
 							csel0[start_pos + 1: start_pos + len(val) + 1] = cond[0] + 1
 							cop[start_pos + 1: start_pos + len(val) + 1] = cond[1]
 
-					elif d['question'] in q_need_col_similar_set:
-						header_name = t[cond[0]]
-						start_pos, end_pos, match_val = alap_an_cn_mark(d['question'], header_name, cond[2])
+					elif temp_data['question'] in q_need_col_similar_set:
+						header_name = t_headers[cond[0]]
+						start_pos, end_pos, match_val = find_column_value(header_name, temp_data['question'], cond[2])
 						csel0[start_pos + 1: end_pos + 1] = cond[0] + 1
 						cop[start_pos + 1: end_pos + 1] = cond[1]
 					else:
@@ -409,8 +419,8 @@ def nl2sql(question, table):
 	输入question和headers，转SQL
 	"""
 	try:
-		question = trans_question_acc(question)
-		question = trans_question_short_year(question)
+		question = preprocess_cn_2_an(question)
+		question = preprocess_short_year(question)
 		question = question.replace('负数', '小于0')
 		question = question.replace('负值', '小于0')
 		question = question.replace('为负', '小于0')
@@ -635,7 +645,7 @@ def nl2sql(question, table):
 		if j == 2:  # 这里判定出条件运算符是等号哦  等号也有可能是数字的
 			ori_k = k
 			if k not in table['all_values']:
-				k = most_similar_new(k, list(table['all_values']))
+				k = find_similar_with_num(k, list(table['all_values']))
 				if k is None: continue
 			idx_except = False
 			try:

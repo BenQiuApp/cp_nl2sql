@@ -1,8 +1,9 @@
 import os
 from hand_set import get_val_by_pos_hand_set
 from config import PREPARE_DATA_PATH, TRAIN_JSON_PATH, TRAIN_TABLES_PATH
-from check_input_feature import trans_question_acc, most_similar_2, alap_an_cn_mark
-from utils import read_data, check_num_exactly_match, check_num_exactly_match_zero_case
+from check_input_feature import find_similar_fragment, find_column_value
+from question_prepro import preprocess_cn_2_an
+from utils import read_data, find_num
 
 q_correct_path = os.path.join(PREPARE_DATA_PATH, 'new_q_correct')  # 不区分类型的 正确匹配
 q_no_num_similar_path = os.path.join(PREPARE_DATA_PATH, 'new_q_no_num_similar')  # 非数字的，通过相似函数可以匹配正确的
@@ -92,13 +93,13 @@ def get_correct_q(file_path, mode='write', unwanted=set([])):
 			types = table_types[d['table_id']]
 			header = table_headers[d['table_id']]
 			exact_match = True
-			question = trans_question_acc(question)
+			question = preprocess_cn_2_an(question)
 			all_correct = True
 			con_val_list = [cond[2] for cond in conds]
 			q_op_mark = [0] * len(question)
 			for cond in conds:
 				if cond[2] in question and con_val_list.count(cond[2]) == 1:
-					if (types[cond[0]] == 'real' and check_num_exactly_match(cond[2], question)[0] != 1) or \
+					if (types[cond[0]] == 'real' and find_num(cond[2], question)[0] != 1) or \
 									(types[cond[0]] == 'text' and question.count(cond[2]) != 1):
 						all_correct = False
 						break
@@ -141,7 +142,7 @@ def get_no_num_similar(file_path, mode='write', unwanted=set([])):
 			conds = d['sql']['conds']
 			types = table_types[d['table_id']]
 			header = table_headers[d['table_id']]
-			question = trans_question_acc(question)  # 转化是必须的
+			question = preprocess_cn_2_an(question)  # 转化是必须的
 			if question in unwanted: continue
 			type_set = set([types[cond[0]] for cond in conds])
 			if 'real' in type_set: continue  # 获取非数字
@@ -151,7 +152,7 @@ def get_no_num_similar(file_path, mode='write', unwanted=set([])):
 				if cond[2] in question:
 					sim = cond[2]
 				else:
-					sim = most_similar_2(cond[2], question)
+					sim = find_similar_fragment(cond[2], question)
 				if sim is None:
 					good = False
 					break
@@ -199,7 +200,7 @@ def q_one_vs_more_col(file_path, mode='write', unwanted=set([])):
 			conds = d['sql']['conds']
 			types = table_types[d['table_id']]
 			header = table_headers[d['table_id']]
-			question = trans_question_acc(question)  # 转化是必须的
+			question = preprocess_cn_2_an(question)  # 转化是必须的
 			if question in unwanted: continue
 			vals = set([cond[2] for cond in conds])
 			if len(vals) == len(conds): continue
@@ -210,8 +211,7 @@ def q_one_vs_more_col(file_path, mode='write', unwanted=set([])):
 				except:
 					is_good = False
 					continue
-				if check_num_exactly_match(val, question)[0] != 1 \
-								and check_num_exactly_match_zero_case(val, question)[0] != 1:
+				if find_num(val, question)[0] != 1 and find_num(val, question, False)[0] != 1:
 					is_good = False
 					break
 			cnts += 1
@@ -246,7 +246,7 @@ def q_need_exactly_match(file_path, mode='write', unwanted=set([])):
 			conds = d['sql']['conds']
 			types = table_types[d['table_id']]
 			header = table_headers[d['table_id']]
-			question = trans_question_acc(question)  # 转化
+			question = preprocess_cn_2_an(question)  # 转化
 			if question in unwanted: continue
 			is_good = True
 			for cond in conds:
@@ -256,7 +256,7 @@ def q_need_exactly_match(file_path, mode='write', unwanted=set([])):
 					is_good = False
 					break
 				if question.count(cond[2]) > 1:
-					cnt = check_num_exactly_match(cond[2], question)[0]
+					cnt = find_num(cond[2], question)[0]
 					if cnt != 1:
 						is_good = False
 						break
@@ -289,7 +289,7 @@ def q_need_exactly_match_more_strict(file_path, mode='write', unwanted=set([])):
 			conds = d['sql']['conds']
 			types = table_types[d['table_id']]
 			header = table_headers[d['table_id']]
-			question = trans_question_acc(question)  # 转化是必须的
+			question = preprocess_cn_2_an(question)  # 转化是必须的
 			if question in unwanted: continue
 			is_good = True
 			mark_q = [0] * len(question)
@@ -300,7 +300,7 @@ def q_need_exactly_match_more_strict(file_path, mode='write', unwanted=set([])):
 					is_good = False
 					break
 				if question.count(cond[2]) >= 1:
-					cnt_info = check_num_exactly_match_zero_case(cond[2], question)
+					cnt_info = find_num(cond[2], question, False)
 					if cnt_info[0] != 1:
 						is_good = False
 						break
@@ -376,7 +376,7 @@ def q_text_contain_similar(file_path, mode='write', unwanted=set([])):
 			conds = d['sql']['conds']
 			types = table_types[d['table_id']]
 			header = table_headers[d['table_id']]
-			question = trans_question_acc(question)  # 转化
+			question = preprocess_cn_2_an(question)  # 转化
 			# all cond val is not 'real'
 			type_set = set([types[cond[0]] for cond in conds])
 			if question in unwanted: continue
@@ -385,7 +385,7 @@ def q_text_contain_similar(file_path, mode='write', unwanted=set([])):
 			mark_list = [0] * len(question)
 			for cond in conds:
 				if types[cond[0]] == 'real':  # 如果是数字的话，通过另外的方法判断
-					find_cnt, num_start_idx, num_end_idx = check_num_exactly_match_zero_case(cond[2], question)
+					find_cnt, num_start_idx, num_end_idx = find_num(cond[2], question, False)
 					if find_cnt == 1 and max(mark_list[num_start_idx:num_end_idx + 1]) > 0:
 						good = False
 						break
@@ -394,7 +394,7 @@ def q_text_contain_similar(file_path, mode='write', unwanted=set([])):
 					if find_cnt > 1:
 						good = False
 					if find_cnt == 0:
-						val = most_similar_2(cond[2], question)
+						val = find_similar_fragment(cond[2], question)
 						if not val:
 							good = False
 							break
@@ -403,7 +403,7 @@ def q_text_contain_similar(file_path, mode='write', unwanted=set([])):
 							break
 						mark_list[question.index(val): question.index(val) + len(val)] = [1] * len(val)
 				else:  # 文本
-					val = most_similar_2(cond[2], question)
+					val = find_similar_fragment(cond[2], question)
 					if not val:
 						good = False
 						break
@@ -413,13 +413,13 @@ def q_text_contain_similar(file_path, mode='write', unwanted=set([])):
 				cnt += 1
 				for cond in conds:
 					if types[cond[0]] == 'real':  # 如果是数字的话，通过另外的方法判断
-						find_cnt, num_start_idx, num_end_idx = check_num_exactly_match_zero_case(cond[2], question)
+						find_cnt, num_start_idx, num_end_idx = find_num(cond[2], question, False)
 						if find_cnt == 0:
-							val = most_similar_2(cond[2], question)
+							val = find_similar_fragment(cond[2], question)
 						else:
 							val = question[num_start_idx: num_end_idx + 1]
 					else:  # 文本
-						val = most_similar_2(cond[2], question)
+						val = find_similar_fragment(cond[2], question)
 				d_s.add(question + '\n')
 		f_h.writelines(list(d_s))
 	elif mode == 'read':
@@ -462,7 +462,7 @@ def q_need_col_similar(file_path, mode='write', unwanted=set([])):
 			conds = d['sql']['conds']
 			types = table_types[d['table_id']]
 			header = table_headers[d['table_id']]
-			question = trans_question_acc(question)  # 转化
+			question = preprocess_cn_2_an(question)  # 转化
 
 			type_set = set([types[cond[0]] for cond in conds])
 			if question in unwanted: continue
@@ -470,13 +470,13 @@ def q_need_col_similar(file_path, mode='write', unwanted=set([])):
 			good = True
 			mark_pos = [0] * len(question)
 			cond_set = list(set([cond[2] for cond in conds]))
-			if len(cond_set) == 1 and check_num_exactly_match(cond_set[0], question)[0] < len(conds):
+			if len(cond_set) == 1 and find_num(cond_set[0], question)[0] < len(conds):
 				pass
 			for cond in conds:
 				header_name = header[cond[0]]
-				header_sim = most_similar_2(header_name, question)
+				header_sim = find_similar_fragment(header_name, question)
 				if not header_sim: good = False; break
-				start_idx, end_idx, match_val = alap_an_cn_mark(question, header_name, cond[2])
+				start_idx, end_idx, match_val = find_column_value(header_name, question, cond[2])
 				if not match_val or match_val != cond[2]: good = False; break
 				if max(mark_pos[start_idx:end_idx]) > 0: good = False; break
 				mark_pos[start_idx: end_idx] = [1] * len(match_val)
@@ -485,9 +485,9 @@ def q_need_col_similar(file_path, mode='write', unwanted=set([])):
 				# 正确的取数口径
 				for cond in conds:
 					header_name = header[cond[0]]
-					header_sim = most_similar_2(header_name, question)
+					header_sim = find_similar_fragment(header_name, question)
 					# 如果是real才需要下面这种，文本的话，直接most_similar !!
-					start_idx, end_idx, match_val = alap_an_cn_mark(question, header_name, cond[2])
+					start_idx, end_idx, match_val = find_column_value(header_name, question, cond[2])
 				d_s.add(question + '\n')
 		f_h.writelines(list(d_s))
 	elif mode == 'read':
@@ -517,7 +517,7 @@ def check_other():
 		conds = d['sql']['conds']
 		types = table_types[d['table_id']]
 		header = table_headers[d['table_id']]
-		question = trans_question_acc(question)
+		question = preprocess_cn_2_an(question)
 		if question in bad_question | wrong_mark_official | correct_q_set | \
 						no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set | \
 						q_need_exactly_match_more_strinct_set | q_text_contain_similar_set | q_need_col_similar_set:
