@@ -5,8 +5,8 @@ from check_input_feature import find_similar_fragment, find_column_value
 from question_prepro import preprocess_cn_2_an
 from utils import read_data, find_num
 
-q_correct_path = os.path.join(PREPARE_DATA_PATH, 'new_q_correct')  # 不区分类型的 正确匹配
-q_no_num_similar_path = os.path.join(PREPARE_DATA_PATH, 'new_q_no_num_similar')  # 非数字的，通过相似函数可以匹配正确的
+CORRECT_PATH = os.path.join(PREPARE_DATA_PATH, 'q_correct')  # 不区分类型的 正确匹配
+NO_NUM_SIMILAR_PATH = os.path.join(PREPARE_DATA_PATH, 'q_no_num_similar')  # 非数字的，通过相似函数可以匹配正确的
 q_num_double_more_path = os.path.join(PREPARE_DATA_PATH, 'q_num_double_more')
 q_need_col_similar_path = os.path.join(PREPARE_DATA_PATH, 'new_q_need_col_sim')
 q_one_vs_more_col_path = os.path.join(PREPARE_DATA_PATH, 'new_q_one_vs_more_col')
@@ -23,13 +23,13 @@ train_data, train_tables = read_data(
 table_types = {}
 table_headers = {}
 
-for data in train_tables:
-	types = train_tables[data]['types']
-	table_types[data] = types
-	table_headers[data] = train_tables[data]['headers']
+for temp_data in train_tables:
+	temp_types = train_tables[temp_data]['types']
+	table_types[temp_data] = temp_types
+	table_headers[temp_data] = train_tables[temp_data]['headers']
 
 # 经过简单匹配，可以找出那些官方标注中有明显问题的样本
-wrong_mark_official = set([
+WRONG_MARK_OFFICIAL = set([
 	'你知道新房上周成交量和当月累计成交量都大于100万平的是哪些城市吗',
 	'成交面积在本周或者上周都大于14万平的城市有哪些',
 	'你知道那些成交面积在本周或者上周都超过14万平的城市吗',
@@ -55,7 +55,7 @@ wrong_mark_official = set([
 ])
 
 # 经过简单匹配，可以找出那些官方标注中有明显问题的样本
-bad_question = set([
+BAD_QUESTION = set([
 	'听说产线被关停了，为什么啊，具体原因呢',
 	'产线关停，大新闻啊，什么时候，为什么，以后还能不能恢复',
 	'呃呃那个上周被禁二手房成交量达到多少啊，还有这个月的成交量呢',
@@ -85,46 +85,50 @@ def get_correct_q(file_path, mode='write', unwanted=set([])):
 	d_s = set([])
 	if mode == 'write':
 		f_h = open(file_path, 'w')
-		for d in train_data:
-			question = d['question']
 
-			if question in unwanted: continue
-			conds = d['sql']['conds']
-			types = table_types[d['table_id']]
-			header = table_headers[d['table_id']]
-			exact_match = True
+		for data in train_data:
+			question = data['question']
+			if question in unwanted:
+				continue
+			table_id = data['table_id']
+			conds = data['sql']['conds']
+			types = table_types[table_id]
 			question = preprocess_cn_2_an(question)
-			all_correct = True
-			con_val_list = [cond[2] for cond in conds]
+			cond_val_list = [cond[2] for cond in conds]
 			q_op_mark = [0] * len(question)
+			correct_flat = True
 			for cond in conds:
-				if cond[2] in question and con_val_list.count(cond[2]) == 1:
+				if cond[2] in question and cond_val_list.count(cond[2]) == 1:
+					# 数字 real 使用 find_num 匹配，文本 text 使用字符串严格匹配
 					if (types[cond[0]] == 'real' and find_num(cond[2], question)[0] != 1) or \
-									(types[cond[0]] == 'text' and question.count(cond[2]) != 1):
-						all_correct = False
+							(types[cond[0]] == 'text' and question.count(cond[2]) != 1):
+						correct_flat = False
 						break
+					# 检验 question 与 cond 匹配间是否有重复区间
 					if max(q_op_mark[question.index(cond[2]): question.index(cond[2]) + len(cond[2])]) == 1:
-						all_correct = False
+						correct_flat = False
 						break
+					# 标记已匹配区域
 					q_op_mark[question.index(cond[2]): question.index(cond[2]) + len(cond[2])] = [1] * len(cond[2])
 				else:
-					all_correct = False
+					correct_flat = False
 					break
-			if all_correct:
+			if correct_flat:
 				d_s.add(question + '\n')
 		f_h.writelines(list(d_s))
+
 	elif mode == 'read':
 		f_h = open(file_path, 'r', encoding='UTF-8')
 		for line in f_h.readlines():
 			d_s.add(line[:-1])
 		return d_s
 	else:
-		raise ValueError('unsupported mode ')
+		raise ValueError('unsupported mode')
 
 
-if not os.path.exists(q_correct_path):
-	get_correct_q(q_correct_path, mode='write', unwanted=wrong_mark_official)
-correct_q_set = get_correct_q(q_correct_path, mode='read', unwanted=wrong_mark_official)
+if not os.path.exists(CORRECT_PATH):
+	get_correct_q(CORRECT_PATH, mode='write', unwanted=WRONG_MARK_OFFICIAL)
+correct_q_set = get_correct_q(CORRECT_PATH, mode='read', unwanted=WRONG_MARK_OFFICIAL)
 assert len(correct_q_set) == 28052  # 28052
 
 
@@ -172,10 +176,9 @@ def get_no_num_similar(file_path, mode='write', unwanted=set([])):
 		raise ValueError('unsupported mode ')
 
 
-if not os.path.exists(q_no_num_similar_path):
-	get_no_num_similar(q_no_num_similar_path, mode='write', unwanted=wrong_mark_official | correct_q_set)
-no_num_similar_set = get_no_num_similar(q_no_num_similar_path, mode='read',
-																				unwanted=wrong_mark_official | correct_q_set)
+if not os.path.exists(NO_NUM_SIMILAR_PATH):
+	get_no_num_similar(NO_NUM_SIMILAR_PATH, 'write', WRONG_MARK_OFFICIAL | correct_q_set)
+no_num_similar_set = get_no_num_similar(NO_NUM_SIMILAR_PATH, 'read', WRONG_MARK_OFFICIAL | correct_q_set)
 assert len(no_num_similar_set) == 7020
 
 
@@ -224,10 +227,10 @@ def q_one_vs_more_col(file_path, mode='write', unwanted=set([])):
 
 if not os.path.exists(q_one_vs_more_col_path):
 	q_one_vs_more_col(q_one_vs_more_col_path,
-										mode='write', unwanted=wrong_mark_official | correct_q_set | no_num_similar_set)
+										mode='write', unwanted=WRONG_MARK_OFFICIAL | correct_q_set | no_num_similar_set)
 q_one_vs_more_col_set = q_one_vs_more_col(q_one_vs_more_col_path,
 																					mode='read',
-																					unwanted=wrong_mark_official | correct_q_set | no_num_similar_set)
+																					unwanted=WRONG_MARK_OFFICIAL | correct_q_set | no_num_similar_set)
 assert len(q_one_vs_more_col_set) == 1349
 
 
@@ -271,9 +274,9 @@ def q_need_exactly_match(file_path, mode='write', unwanted=set([])):
 
 if not os.path.exists(q_need_exactly_match_path):
 	q_need_exactly_match(q_need_exactly_match_path, mode='write',
-											 unwanted=wrong_mark_official | correct_q_set | no_num_similar_set | q_one_vs_more_col_set)
+											 unwanted=WRONG_MARK_OFFICIAL | correct_q_set | no_num_similar_set | q_one_vs_more_col_set)
 q_need_exactly_match_set = q_need_exactly_match(q_need_exactly_match_path, mode='read',
-																								unwanted=wrong_mark_official | correct_q_set | no_num_similar_set | q_one_vs_more_col_set)
+																								unwanted=WRONG_MARK_OFFICIAL | correct_q_set | no_num_similar_set | q_one_vs_more_col_set)
 assert len(q_need_exactly_match_set) == 368
 
 
@@ -320,10 +323,10 @@ def q_need_exactly_match_more_strict(file_path, mode='write', unwanted=set([])):
 if not os.path.exists(q_need_exactly_match_more_strict_path):
 	q_need_exactly_match_more_strict(q_need_exactly_match_more_strict_path,
 																	 mode='write',
-																	 unwanted=wrong_mark_official | correct_q_set | no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set)
+																	 unwanted=WRONG_MARK_OFFICIAL | correct_q_set | no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set)
 q_need_exactly_match_more_strinct_set = q_need_exactly_match_more_strict(q_need_exactly_match_more_strict_path,
 																																				 mode='read',
-																																				 unwanted=wrong_mark_official | correct_q_set | no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set)
+																																				 unwanted=WRONG_MARK_OFFICIAL | correct_q_set | no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set)
 assert len(q_need_exactly_match_more_strinct_set) == 342
 
 
@@ -433,11 +436,11 @@ def q_text_contain_similar(file_path, mode='write', unwanted=set([])):
 
 if not os.path.exists(q_text_contain_similar_path):
 	q_text_contain_similar(q_text_contain_similar_path,
-												 mode='write', unwanted=wrong_mark_official | correct_q_set
+												 mode='write', unwanted=WRONG_MARK_OFFICIAL | correct_q_set
 																								| no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set |
 																								q_need_exactly_match_more_strinct_set)
 q_text_contain_similar_set = q_text_contain_similar(q_text_contain_similar_path,
-																										mode='read', unwanted=wrong_mark_official | correct_q_set
+																										mode='read', unwanted=WRONG_MARK_OFFICIAL | correct_q_set
 																																					| no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set |
 																																					q_need_exactly_match_more_strinct_set)
 assert len(q_text_contain_similar_set) == 1222
@@ -500,11 +503,11 @@ def q_need_col_similar(file_path, mode='write', unwanted=set([])):
 
 
 if not os.path.exists(q_need_col_similar_path):
-	q_need_col_similar(q_need_col_similar_path, mode='write', unwanted=wrong_mark_official | correct_q_set |
+	q_need_col_similar(q_need_col_similar_path, mode='write', unwanted=WRONG_MARK_OFFICIAL | correct_q_set |
 																																		 no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set |
 																																		 q_need_exactly_match_more_strinct_set | q_text_contain_similar_set)
 q_need_col_similar_set = q_need_col_similar(q_need_col_similar_path, mode='read',
-																						unwanted=wrong_mark_official | correct_q_set |
+																						unwanted=WRONG_MARK_OFFICIAL | correct_q_set |
 																										 no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set |
 																										 q_need_exactly_match_more_strinct_set | q_text_contain_similar_set)
 assert len(q_need_col_similar_set) == 1468
@@ -518,7 +521,7 @@ def check_other():
 		types = table_types[d['table_id']]
 		header = table_headers[d['table_id']]
 		question = preprocess_cn_2_an(question)
-		if question in bad_question | wrong_mark_official | correct_q_set | \
+		if question in BAD_QUESTION | WRONG_MARK_OFFICIAL | correct_q_set | \
 						no_num_similar_set | q_one_vs_more_col_set | q_need_exactly_match_set | \
 						q_need_exactly_match_more_strinct_set | q_text_contain_similar_set | q_need_col_similar_set:
 			continue
