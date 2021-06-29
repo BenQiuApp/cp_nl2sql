@@ -1,8 +1,8 @@
 import re
 
-regex_tail = r'([十|百|千|万|亿]+)'
-regex_unit_second_level = r'([平|元|吨|件|支|股])'
-regex_num = r'([0|1|2|3|4|5|6|7|8|9]+)'
+REGEX_TAIL = r'([十|百|千|万|亿]+)'
+REGEX_UNIT = r'([平|元|吨|件|支|股])'
+# regex_num = r'([0|1|2|3|4|5|6|7|8|9]+)'
 format_oper_dict = {
 	'十': 10, '千': 1000, '万': 10000, '万亿': 1000000000000, '亿': 100000000,
 	'百万': 1000000, '百': 100, '十万': 100000, '千万': 10000000
@@ -58,12 +58,12 @@ def get_append_unit(start_idx, end_idx, question):
 	unit_first = ''
 	unit_second = ''
 	# 获取 百十千万
-	while end_idx <= len(question) - 1 and re.findall(regex_tail, question[end_idx]):
+	while end_idx <= len(question) - 1 and re.findall(REGEX_TAIL, question[end_idx]):
 		unit_first += question[end_idx]
 		end_idx += 1
 
-		# 获取二级单位 平/元
-	while end_idx <= len(question) - 1 and re.findall(regex_unit_second_level, question[end_idx]):
+	# 获取二级单位 平/元
+	while end_idx <= len(question) - 1 and re.findall(REGEX_UNIT, question[end_idx]):
 		unit_second += question[end_idx]
 		end_idx += 1
 
@@ -79,6 +79,7 @@ def get_unit_from_title(title):
 	"""
 	# unit_regex = "(亿元).*?亿美元', '万平方米', '万平', '千桶','万人','万平米','亿股', '万吨','万亿件','元/平米',
 	# '亿吨','亿件', '万支', '亿人民币', '亿', '万人次', '百万美元', '百万元'"
+	# Todo: 1. 全角/半角括号未处理, 2. 括号格式可扩展
 	unit_list = re.findall(r'（(.*?)）', title)
 
 	if not unit_list:
@@ -88,25 +89,11 @@ def get_unit_from_title(title):
 	title_unit = set([])
 	for unit in unit_list:
 		unit_in_title = re.findall(unit_regexp, unit)
-
 		if not unit_in_title:
 			continue
 		else:
 			title_unit = set(unit_in_title)
 	return title_unit
-
-
-# def get_unit_set_from_title():
-# 	"""
-# 	从标题中找到所有可选单位
-# 	"""
-# 	unit_list = re.findall(r'（(.*?)）', title)
-# 	if not unit_list: return None
-# 	unit_ret = []
-# 	for unit in unit_list:
-# 		if re.findall(regex_tail, unit):
-# 			unit_ret.append(unit)
-# 	return ' '.join(unit_ret)
 
 
 def number_trans(num, col_header, title, format_of_number=None, format_desc=None):
@@ -125,8 +112,8 @@ def number_trans(num, col_header, title, format_of_number=None, format_desc=None
 	col_header = col_header.replace('kg', '千克')
 	# 解析出header中的单位, 另外如果header里面没有单位，需要到title里面去找
 	col_format = None
-	if re.findall(regex_tail, col_header) and '百分比' not in col_header:
-		col_format = re.findall(regex_tail, col_header)
+	if re.findall(REGEX_TAIL, col_header) and '百分比' not in col_header:
+		col_format = re.findall(REGEX_TAIL, col_header)
 		col_format = col_format[0]  # col_format为header中col的量词格式
 	else:  # 从标题里面找单位
 		# 单位不出现在列名称里面，就可能出现在标题里面
@@ -161,7 +148,7 @@ def number_trans(num, col_header, title, format_of_number=None, format_desc=None
 		# 从unit中获取到量词
 		unit = unit.pop()
 		# 匹配出计量词
-		unit_in_strs = re.findall(regex_tail, unit)
+		unit_in_strs = re.findall(REGEX_TAIL, unit)
 		if not unit_in_strs:
 			return ori_num
 		title_unit_format = unit_in_strs[0]

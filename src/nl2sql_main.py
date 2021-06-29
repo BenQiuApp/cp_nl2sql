@@ -18,7 +18,7 @@ from tqdm import tqdm
 from config import BERT_PATH, TRAIN_JSON_PATH, TRAIN_TABLES_PATH, VALID_JSON_PATH, VALID_TABLES_PATH, TEST_JSON_PATH, TEST_TABLES_PATH, TEST_SUBMIT_PATH, LOG_PATH, WEIGHT_SAVE_PATH, PY3, PY2
 from calc_acc import check_part_acc
 from check_input_feature import find_similar_with_num, find_similar_fragment, find_column_value
-from post_treat import smooth_numeric, get_append_unit, regex_tail, number_trans
+from post_treat import smooth_numeric, get_append_unit, REGEX_TAIL, number_trans
 from new_mark_acc_ensure import correct_q_set, no_num_similar_set,\
 	q_one_vs_more_col_set, q_need_exactly_match_set, q_need_exactly_match_more_strinct_set,\
 	q_text_contain_similar_set, q_need_col_similar_set
@@ -610,10 +610,10 @@ def nl2sql(question, table):
 				csel = pcsel0[0][v_start: v_end].mean(0).argmax() - 1
 				v_e = v_end - 1
 				untreat_unit = ''
-				if v_e < len(question) and len(re.findall(regex_tail, question[v_e])) > 0:
-					untreat_unit = re.findall(regex_tail, question[v_e])[0]
-					if v_e + 1 < len(question) and len(re.findall(regex_tail, question[v_e + 1])) > 0:
-						untreat_unit += re.findall(regex_tail, question[v_e + 1])[0]
+				if v_e < len(question) and len(re.findall(REGEX_TAIL, question[v_e])) > 0:
+					untreat_unit = re.findall(REGEX_TAIL, question[v_e])[0]
+					if v_e + 1 < len(question) and len(re.findall(REGEX_TAIL, question[v_e + 1])) > 0:
+						untreat_unit += re.findall(REGEX_TAIL, question[v_e + 1])[0]
 				if v_str is not None:
 					v_str = smooth_val
 					unit_first_list.append(unit_first)
